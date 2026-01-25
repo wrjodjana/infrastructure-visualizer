@@ -13,7 +13,7 @@ export default function Home() {
     load_google_maps();
     async function init_map() {
       const { Map } = (await google.maps.importLibrary("maps")) as google.maps.MapsLibrary;
-      const { ColorScheme } = (await google.maps.importLibrary("core")) as any;
+      const { ColorScheme } = (await google.maps.importLibrary("core")) as google.maps.CoreLibrary;
 
       if (map_ref.current) {
         const new_map = new Map(map_ref.current, {

@@ -7,7 +7,7 @@ import { fetch_roads, fetch_intersections } from "@/lib/network/osm";
 import { RenderRoads } from "@/lib/network/roads";
 import { RenderBridges } from "@/lib/network/bridges";
 import { RenderEarthquakes } from "@/lib/network/earthquakes";
-import { MapProps } from "@/lib/types";
+import { MapProps, ShakemapData } from "@/lib/types";
 import { fetch_shakemap } from "@/lib/network/shakemap";
 import Legend from "./legend";
 
@@ -19,10 +19,7 @@ export default function Sidebar({ map }: MapProps) {
   const [selected_coords, set_selected_coords] = useState<Coordinates | null>(null);
 
   const [show_road_legend, set_show_road_legend] = useState(false);
-  const [is_drawing_mode, set_is_drawing_mode] = useState(false);
-  const [is_loading, set_is_loading] = useState(false);
-
-  const [shakemap_data, set_shakemap_data] = useState<any>(null);
+  const [shakemap_data, set_shakemap_data] = useState<ShakemapData | null>(null);
   const [target_magnitude, set_target_magnitude] = useState<number | null>(null);
 
   const handle_select_location = async () => {
@@ -33,21 +30,16 @@ export default function Sidebar({ map }: MapProps) {
       const manager = new RectangleManager(map, (coords) => {
         if (coords) {
           set_selected_coords(coords);
-          set_is_drawing_mode(false);
         }
       });
       await manager.initialize();
       rectangle_manager_ref.current = manager;
     }
     rectangle_manager_ref.current.enable_drawing();
-    set_is_drawing_mode(true);
   };
 
   const display_roads = async () => {
     if (!selected_coords || !map) return;
-
-    set_is_drawing_mode(false);
-    set_is_loading(true);
 
     try {
       const road_data = await fetch_roads(selected_coords);
@@ -60,17 +52,13 @@ export default function Sidebar({ map }: MapProps) {
       road_renderer_ref.current.draw_roads(road_data.elements);
       road_renderer_ref.current.draw_intersections(intersection_data.elements);
       set_show_road_legend(true);
-    } catch (error) {
+    } catch {
       console.error("Failed to fetch roads.");
-    } finally {
-      set_is_loading(false);
     }
   };
 
   const display_bridges = async () => {
     if (!selected_coords || !map) return;
-
-    set_is_loading(true);
 
     try {
       if (!bridge_renderer_ref.current) {
@@ -78,10 +66,8 @@ export default function Sidebar({ map }: MapProps) {
       }
 
       await bridge_renderer_ref.current.draw_bridges(selected_coords);
-    } catch (error) {
+    } catch {
       console.error("Failed to load bridges.");
-    } finally {
-      set_is_loading(false);
     }
   };
 
@@ -98,10 +84,13 @@ export default function Sidebar({ map }: MapProps) {
       return;
     }
 
-    set_is_loading(true);
-
     try {
-      const payload: any = { shakemap_data, bridges };
+      interface BridgeFailurePayload {
+        shakemap_data: ShakemapData;
+        bridges: unknown[];
+        target_magnitude?: number;
+      }
+      const payload: BridgeFailurePayload = { shakemap_data, bridges };
 
       if (target_magnitude !== null) {
         payload.target_magnitude = target_magnitude;
@@ -116,15 +105,11 @@ export default function Sidebar({ map }: MapProps) {
       console.log(failures);
     } catch (error) {
       console.error("Failed to calculate bridge failures:", error);
-    } finally {
-      set_is_loading(false);
     }
   };
 
   const display_earthquakes = async () => {
     if (!selected_coords || !map) return;
-
-    set_is_loading(true);
 
     try {
       if (!earthquake_renderer_ref.current) {
@@ -136,10 +121,8 @@ export default function Sidebar({ map }: MapProps) {
       const shakemap = await fetch_shakemap(earthquake);
       console.log(shakemap);
       set_shakemap_data(shakemap);
-    } catch (error) {
+    } catch {
       console.error("Failed to load earthquakes.");
-    } finally {
-      set_is_loading(false);
     }
   };
 
@@ -177,7 +160,6 @@ export default function Sidebar({ map }: MapProps) {
     }
     set_show_road_legend(false);
     set_selected_coords(null);
-    set_is_drawing_mode(false);
     set_shakemap_data(null);
   };
 
