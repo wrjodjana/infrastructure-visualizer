@@ -1,6 +1,6 @@
 import { RoadElements, Intersection } from "../types";
 import { CustomPopup } from "../popup";
-import type { Map, Polyline, Marker, LatLngExpression } from "leaflet";
+import type { Map, Polyline, Marker, LatLngExpression, LeafletMouseEvent } from "leaflet";
 import { getLeaflet } from "../leaflet_map";
 
 const ROAD_STYLES: Record<string, { color: string; weight: number; opacity: number; zIndex: number }> = {
@@ -60,7 +60,7 @@ export class RenderRoads {
           weight: style.weight,
         }).addTo(this.map);
 
-        polyline.on("click", (e) => {
+        polyline.on("click", (e: LeafletMouseEvent) => {
           if (this.current_popup) {
             this.current_popup.remove();
           }
